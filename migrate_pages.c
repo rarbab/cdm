@@ -9,6 +9,10 @@
 #include <numa.h>
 #include <unistd.h>
 #include <errno.h>
+#include <fcntl.h>
+#include <sys/mman.h>
+
+#define TENMB (10 * 1024 * 1024)
 
 unsigned int pagesize;
 unsigned int page_count = 32;
@@ -28,6 +32,12 @@ struct bitmask *new_nodes;
 int main(int argc, char **argv)
 {
 	int i, rc;
+	int fflag = 0;
+
+	while ((i = getopt(argc, argv, "f")) != -1) {
+		if (i == 'f')
+			fflag = 1;
+	}
 
 	pagesize = getpagesize();
 
@@ -44,11 +54,41 @@ int main(int argc, char **argv)
 	}
 
 	setbuf(stdout, NULL);
-	printf("migrate_pages() test ......\n");
-	if (argc > 1)
-		sscanf(argv[1], "%d", &page_count);
+	if (argc > optind)
+		sscanf(argv[optind], "%d", &page_count);
 
-	page_base = malloc((pagesize + 1) * page_count);
+	if (fflag) {
+		int fd;
+
+		printf("Migrate test using file backed memory...\n");
+		fd = open("/tmp/numa_example_tmp", O_CREAT | O_RDWR,
+			  S_IRUSR | S_IWUSR);
+		if (fd < 0) {
+			perror("open");
+			exit(1);
+		}
+
+		if (lseek(fd, TENMB, SEEK_SET) != TENMB) {
+			perror("lseek");
+			exit(1);
+		}
+
+		if (write(fd, "X", 1) != 1) {
+			perror("write");
+			exit(1);
+		}
+
+		page_base = mmap(NULL, pagesize * (page_count + 1), O_RDWR,
+				 MAP_PRIVATE, fd, 0);
+		if (page_base == (char *)-1) {
+			perror("mmap");
+			exit(1);
+		}
+	} else {
+		printf("Migrate test using anonymous memory...\n");
+		page_base = malloc(pagesize * (page_count + 1));
+	}
+
 	addr = malloc(sizeof(char *) * page_count);
 	status = malloc(sizeof(int *) * page_count);
 	nodes = malloc(sizeof(int *) * page_count);
