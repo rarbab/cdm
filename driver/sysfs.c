@@ -137,6 +137,7 @@ int store_mem_state(phys_addr_t addr, phys_addr_t size, char *state)
 	return 0;
 }
 
+#ifdef CONFIG_MEMORY_FAILURE
 int store_hard_offline_page(phys_addr_t addr)
 {
 	ssize_t count;
@@ -150,3 +151,4 @@ int store_hard_offline_page(phys_addr_t addr)
 
 	return 0;
 }
+#endif
