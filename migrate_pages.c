@@ -11,6 +11,8 @@
 #include <errno.h>
 #include <fcntl.h>
 #include <sys/mman.h>
+#include <sys/ioctl.h>
+#include "driver/uapi.h"
 
 #define TENMB (10 * 1024 * 1024)
 
@@ -29,14 +31,37 @@ int nr_nodes;
 struct bitmask *old_nodes;
 struct bitmask *new_nodes;
 
+int cdm_migrate_pages(void *base, unsigned long size, int node)
+{
+	struct cdm_migrate mig;
+	int fd, rc;
+
+	fd = open("/dev/cdm0", O_NONBLOCK);
+	if (fd < 0)
+		return fd;
+
+	mig.start = (__u64)base;
+	mig.end = (__u64)base + size;
+	mig.node = node;
+
+	rc = ioctl(fd, CDM_IOC_MIGRATE, &mig);
+	close(fd);
+	if (rc)
+		return -errno;
+
+	return 0;
+}
+
 int main(int argc, char **argv)
 {
 	int i, rc;
-	int fflag = 0;
+	int fflag = 0, nflag = 0;
 
-	while ((i = getopt(argc, argv, "f")) != -1) {
+	while ((i = getopt(argc, argv, "fn")) != -1) {
 		if (i == 'f')
 			fflag = 1;
+		else if (i == 'n')
+			nflag = 1;
 	}
 
 	pagesize = getpagesize();
@@ -123,7 +148,7 @@ int main(int argc, char **argv)
 	for (i = 0; i < page_count; i++) {
 		printf("Page %d vaddr=%p node=%d\n", i, pages + i * pagesize, status[i]);
 		if (i != 2 && status[i] != 1) {
-			printf("Bad page state before migrate_pages. Page %d status %d\n",i, status[i]);
+			printf("Bad page state before migrate. Page %d status %d\n",i, status[i]);
 			exit(1);
 		}
 	}
@@ -132,10 +157,13 @@ int main(int argc, char **argv)
 	numa_move_pages(0, page_count, addr, nodes, status, 0);
 
 	printf("\nMigrating the current processes pages ...\n");
-	rc = numa_migrate_pages(0, old_nodes, new_nodes);
+	if (nflag)
+		rc = numa_migrate_pages(0, old_nodes, new_nodes);
+	else
+		rc = cdm_migrate_pages(pages, pagesize * page_count, 0);
 
 	if (rc < 0) {
-		perror("numa_migrate_pages failed");
+		perror("migrate failed");
 		errors++;
 	}
 

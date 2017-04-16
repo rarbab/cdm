@@ -4,11 +4,13 @@
 #include <linux/of_address.h>
 #include <linux/module.h>
 #include <linux/slab.h>
+#include <linux/uaccess.h>
 #include "cdm.h"
 #include "uapi.h"
 
 int cdm_up(struct cdm_device *cdmdev);
 void cdm_down(struct cdm_device *cdmdev);
+int cdm_migrate(struct cdm_migrate *mig);
 
 #define CDM_DEVICE_MAX 6
 
@@ -20,6 +22,8 @@ static long cdm_fops_ioctl(struct file *file, unsigned int cmd,
 {
 	struct miscdevice *miscdev = file->private_data;
 	struct cdm_device *cdmdev;
+	struct cdm_migrate mig;
+	int rc;
 
 	if (!miscdev)
 		return -EINVAL;
@@ -32,6 +36,12 @@ static long cdm_fops_ioctl(struct file *file, unsigned int cmd,
 	case CDM_IOC_DOWN:
 		cdm_down(cdmdev);
 		return 0;
+	case CDM_IOC_MIGRATE:
+		rc = copy_from_user(&mig, (void __user *)arg, sizeof(mig));
+		if (rc)
+			return rc;
+
+		return cdm_migrate(&mig);
 	}
 
 	return -ENOTTY;

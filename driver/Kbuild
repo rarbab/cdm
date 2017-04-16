@@ -2,4 +2,5 @@ obj-m := cdm.o
 
 cdm-y := drv.o
 cdm-y += hp_sysfs.o
+cdm-y += mig.o
 cdm-y += sysfs.o
