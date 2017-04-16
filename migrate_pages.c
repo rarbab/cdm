@@ -31,14 +31,14 @@ int main(int argc, char **argv)
 
 	pagesize = getpagesize();
 
-	nr_nodes = numa_max_node()+1;
+	nr_nodes = numa_num_possible_nodes();
 
 	old_nodes = numa_bitmask_alloc(nr_nodes);
 	new_nodes = numa_bitmask_alloc(nr_nodes);
 	numa_bitmask_setbit(old_nodes, 1);
 	numa_bitmask_setbit(new_nodes, 0);
 
-	if (nr_nodes < 2) {
+	if (!numa_max_node()) {
 		printf("A minimum of 2 nodes is required for this test.\n");
 		exit(1);
 	}
