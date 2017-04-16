@@ -40,7 +40,7 @@ void cdm_down(struct cdm_device *cdmdev)
 }
 
 #ifdef CONFIG_MEMORY_FAILURE
-int memdev_poison(phys_addr_t addr)
+int cdm_poison(phys_addr_t addr)
 {
 	return store_hard_offline_page(addr);
 }

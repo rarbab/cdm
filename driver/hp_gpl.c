@@ -46,7 +46,7 @@ void cdm_down(struct cdm_device *cdmdev)
 }
 
 #ifdef CONFIG_MEMORY_FAILURE
-int memdev_poison(phys_addr_t addr)
+int cdm_poison(phys_addr_t addr)
 {
 	return memory_failure(PFN_DOWN(addr), 0, 0);
 }
