@@ -75,7 +75,7 @@ static int cdm_miscdev_init(struct miscdevice *miscdev)
 	return rc;
 }
 
-static void cdm_miscdev_del(struct miscdevice *miscdev)
+static void cdm_miscdev_remove(struct miscdevice *miscdev)
 {
 	misc_deregister(miscdev);
 	kfree(miscdev->name);
@@ -140,7 +140,7 @@ err:
 
 static void cdm_device_remove(struct cdm_device *cdmdev)
 {
-	cdm_miscdev_del(&cdmdev->miscdev);
+	cdm_miscdev_remove(&cdmdev->miscdev);
 	kfree(cdmdev);
 }
 
