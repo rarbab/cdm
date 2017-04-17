@@ -54,15 +54,11 @@ static const struct file_operations cdm_device_fops = {
 
 static int cdm_miscdev_init(struct miscdevice *miscdev)
 {
-	char *name;
 	int rc;
 
-	name = kmalloc(7, GFP_KERNEL);
-	if (!name)
+	miscdev->name = kasprintf(GFP_KERNEL, "cdm%d", ncdm);
+	if (!miscdev->name)
 		return -ENOMEM;
-
-	snprintf(name, 7, "cdm%d", ncdm);
-	miscdev->name = name;
 
 	miscdev->minor = MISC_DYNAMIC_MINOR;
 	miscdev->fops = &cdm_device_fops;
@@ -70,7 +66,7 @@ static int cdm_miscdev_init(struct miscdevice *miscdev)
 
 	rc = misc_register(miscdev);
 	if (rc)
-		kfree(name);
+		kfree(miscdev->name);
 
 	return rc;
 }
