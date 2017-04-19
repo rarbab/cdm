@@ -70,8 +70,8 @@ int main(int argc, char **argv)
 
 	old_nodes = numa_bitmask_alloc(nr_nodes);
 	new_nodes = numa_bitmask_alloc(nr_nodes);
-	numa_bitmask_setbit(old_nodes, 1);
-	numa_bitmask_setbit(new_nodes, 0);
+	numa_bitmask_setbit(old_nodes, 0);
+	numa_bitmask_setbit(new_nodes, 1);
 
 	if (!numa_max_node()) {
 		printf("A minimum of 2 nodes is required for this test.\n");
@@ -129,7 +129,7 @@ int main(int argc, char **argv)
 			/* We leave page 2 unallocated */
 			pages[ i * pagesize ] = (char) i;
 		addr[i] = pages + i * pagesize;
-		nodes[i] = 1;
+		nodes[i] = 0;
 		status[i] = -123;
 	}
 
@@ -153,7 +153,7 @@ int main(int argc, char **argv)
 		if (fflag)
 			continue;
 
-		if (i != 2 && status[i] != 1) {
+		if (i != 2 && !numa_bitmask_isbitset(old_nodes, status[i])) {
 			printf("Bad page state before migrate. Page %d status %d\n",i, status[i]);
 			exit(1);
 		}
@@ -164,7 +164,7 @@ int main(int argc, char **argv)
 	if (nflag)
 		rc = numa_migrate_pages(0, old_nodes, new_nodes);
 	else
-		rc = cdm_migrate_pages(pages, pagesize * page_count, 0);
+		rc = cdm_migrate_pages(pages, pagesize * page_count, 1);
 
 	if (rc < 0) {
 		perror("migrate failed");
@@ -180,7 +180,7 @@ int main(int argc, char **argv)
 			if (pages[ i* pagesize ] != (char) i) {
 				printf("*** Page contents corrupted.\n");
 				errors++;
-			} else if (status[i]) {
+			} else if (!numa_bitmask_isbitset(new_nodes, status[i])) {
 				printf("*** Page on the wrong node\n");
 				errors++;
 			}
