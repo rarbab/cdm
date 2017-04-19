@@ -9,11 +9,11 @@ int cdm_up(struct cdm_device *cdmdev)
 {
 	resource_size_t addr = cdmdev->res.start;
 	resource_size_t size = resource_size(&cdmdev->res);
-	int rc, nid = dev_to_node(cdmdev->miscdev.this_device);
+	int rc;
 
 	memhp_auto_online = false;
 
-	rc = add_memory(nid, addr, size);
+	rc = add_memory(cdmdev_to_node(cdmdev), addr, size);
 	if (rc && rc != -EEXIST)
 		return rc;
 
@@ -33,7 +33,6 @@ void cdm_down(struct cdm_device *cdmdev)
 {
 	resource_size_t addr = cdmdev->res.start;
 	resource_size_t size = resource_size(&cdmdev->res);
-	int nid = dev_to_node(cdmdev->miscdev.this_device);
 
 	/*
 	 * FIXME: Find a non-sysfs way for a driver to offline memory.
@@ -42,7 +41,7 @@ void cdm_down(struct cdm_device *cdmdev)
 		pr_err("error offlining [0x%lx..0x%lx]\n",
 		       (unsigned long)addr, (unsigned long)cdmdev->res.end);
 
-	remove_memory(nid, addr, size);
+	remove_memory(cdmdev_to_node(cdmdev), addr, size);
 }
 
 #ifdef CONFIG_MEMORY_FAILURE
