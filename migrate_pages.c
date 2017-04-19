@@ -133,11 +133,13 @@ int main(int argc, char **argv)
 		status[i] = -123;
 	}
 
-	/* Move to starting node */
-	rc = numa_move_pages(0, page_count, addr, nodes, status, 0);
-	if (rc < 0 && errno != ENOENT) {
-		perror("move_pages");
-		exit(1);
+	if (!fflag) {
+		/* Move to starting node */
+		rc = numa_move_pages(0, page_count, addr, nodes, status, 0);
+		if (rc < 0 && errno != ENOENT) {
+			perror("move_pages");
+			exit(1);
+		}
 	}
 
 	/* Verify correct startup locations */
@@ -147,6 +149,10 @@ int main(int argc, char **argv)
 	numa_move_pages(0, page_count, addr, NULL, status, 0);
 	for (i = 0; i < page_count; i++) {
 		printf("Page %d vaddr=%p node=%d\n", i, pages + i * pagesize, status[i]);
+
+		if (fflag)
+			continue;
+
 		if (i != 2 && status[i] != 1) {
 			printf("Bad page state before migrate. Page %d status %d\n",i, status[i]);
 			exit(1);
