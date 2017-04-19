@@ -15,7 +15,7 @@ int cdm_migrate(struct cdm_migrate *mig);
 #define CDM_DEVICE_MAX 6
 
 static struct cdm_device *cdm_device[CDM_DEVICE_MAX];
-static unsigned int ncdm = 0;
+nodemask_t cdm_nmask = NODE_MASK_NONE;
 
 static long cdm_fops_ioctl(struct file *file, unsigned int cmd,
 			   unsigned long arg)
@@ -52,7 +52,7 @@ static const struct file_operations cdm_device_fops = {
 	.unlocked_ioctl = cdm_fops_ioctl
 };
 
-static int cdm_miscdev_init(struct miscdevice *miscdev)
+static int cdm_miscdev_init(struct miscdevice *miscdev, int ncdm)
 {
 	int rc;
 
@@ -97,6 +97,7 @@ static int cdm_resource_init(struct resource *res, struct device_node *dn)
 
 static int cdm_device_probe(struct device_node *dn)
 {
+	int ncdm = nodes_weight(cdm_nmask);
 	struct cdm_device *cdmdev;
 	struct device *dev;
 	int nid, rc;
@@ -118,7 +119,7 @@ static int cdm_device_probe(struct device_node *dn)
 		goto err;
 	}
 
-	rc = cdm_miscdev_init(&cdmdev->miscdev);
+	rc = cdm_miscdev_init(&cdmdev->miscdev, ncdm);
 	if (rc)
 		goto err;
 
@@ -126,7 +127,8 @@ static int cdm_device_probe(struct device_node *dn)
 	set_dev_node(dev, nid);
 	dev->of_node = dn;
 
-	cdm_device[ncdm++] = cdmdev;
+	cdm_device[ncdm] = cdmdev;
+	node_set(nid, cdm_nmask);
 	return 0;
 
 err:
@@ -136,12 +138,15 @@ err:
 
 static void cdm_device_remove(struct cdm_device *cdmdev)
 {
+	node_clear(cdmdev_to_node(cdmdev), cdm_nmask);
 	cdm_miscdev_remove(&cdmdev->miscdev);
 	kfree(cdmdev);
 }
 
 static void cdm_device_remove_all(void)
 {
+	int ncdm = nodes_weight(cdm_nmask);
+
 	while (ncdm)
 		cdm_device_remove(cdm_device[--ncdm]);
 }
