@@ -3,36 +3,57 @@
 #include <linux/migrate.h>
 #include <linux/pagemap.h>
 #include <linux/slab.h>
+#include "cdm.h"
 #include "uapi.h"
 
+extern nodemask_t cdm_nmask;
+
 #ifdef CONFIG_HMM
+
+static struct page *alloc_page_cdm(struct cdm_device *cdmdev,
+				   struct page *old)
+{
+	gfp_t gfp = GFP_HIGHUSER_MOVABLE;
+	struct zonelist *zl;
+	nodemask_t nmask;
+
+	if (cdmdev)
+		node_set(cdmdev_to_node(cdmdev), nmask);
+	else
+		nodes_andnot(nmask, node_states[N_MEMORY], cdm_nmask);
+
+	zl = node_zonelist(page_to_nid(old), gfp);
+	return __alloc_pages_nodemask(gfp, 0, zl, &nmask);
+}
 
 static void alloc_and_copy(struct vm_area_struct *vma,
 			   const unsigned long *src, unsigned long *dst,
 			   unsigned long start, unsigned long end,
 			   void *private)
 {
-	int node = *(int *)private;
+	struct cdm_device *cdmdev = (struct cdm_device *)private;
 	unsigned long i;
 
 	for (i = 0; i < (end - start) >> PAGE_SHIFT; i++) {
-		struct page *page;
+		struct page *spage, *dpage;
 
 		if (!(src[i] & MIGRATE_PFN_MIGRATE))
 			continue;
 
-		page = alloc_pages_node(node, GFP_HIGHUSER_MOVABLE, 0);
-		if (!page) {
+		spage = migrate_pfn_to_page(src[i]);
+		dpage = alloc_page_cdm(cdmdev, spage);
+
+		if (!dpage) {
 			pr_err("%s: failed to alloc dst[%ld]\n", __func__, i);
 			dst[i] = 0;
 			continue;
 		}
 
 		/* use dma here */
-		copy_highpage(page, migrate_pfn_to_page(src[i]));
+		copy_highpage(dpage, spage);
 
-		lock_page(page);
-		dst[i] = migrate_pfn(page_to_pfn(page)) | MIGRATE_PFN_LOCKED;
+		lock_page(dpage);
+		dst[i] = migrate_pfn(page_to_pfn(dpage)) | MIGRATE_PFN_LOCKED;
 	}
 }
 
@@ -58,7 +79,7 @@ const struct migrate_vma_ops ops =
 	.finalize_and_map = finalize_and_map
 };
 
-int cdm_migrate(struct cdm_migrate *mig)
+int cdm_migrate(struct cdm_device *cdmdev, struct cdm_migrate *mig)
 {
 	struct vm_area_struct *vma;
 	unsigned long addr, next;
@@ -74,7 +95,7 @@ int cdm_migrate(struct cdm_migrate *mig)
 		mentries = (next - addr) >> PAGE_SHIFT;
 
 		rc = migrate_vma(&ops, vma, mentries, addr, next, src, dst,
-				 &mig->node);
+				 cdmdev);
 		if (rc)
 			return rc;
 	}
@@ -84,7 +105,7 @@ int cdm_migrate(struct cdm_migrate *mig)
 
 #else
 
-int cdm_migrate(struct cdm_migrate *mig)
+int cdm_migrate(struct cdm_device *cdmdev, struct cdm_migrate *mig)
 {
 	return -ENOSYS;
 }

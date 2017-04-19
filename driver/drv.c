@@ -10,7 +10,7 @@
 
 int cdm_up(struct cdm_device *cdmdev);
 void cdm_down(struct cdm_device *cdmdev);
-int cdm_migrate(struct cdm_migrate *mig);
+int cdm_migrate(struct cdm_device *cdmdev, struct cdm_migrate *mig);
 
 #define CDM_DEVICE_MAX 6
 
@@ -36,12 +36,15 @@ static long cdm_fops_ioctl(struct file *file, unsigned int cmd,
 	case CDM_IOC_DOWN:
 		cdm_down(cdmdev);
 		return 0;
+	case CDM_IOC_MIGRATE_BACK:
+		cdmdev = NULL;
+		/* fallthrough */
 	case CDM_IOC_MIGRATE:
 		rc = copy_from_user(&mig, (void __user *)arg, sizeof(mig));
 		if (rc)
 			return rc;
 
-		return cdm_migrate(&mig);
+		return cdm_migrate(cdmdev, &mig);
 	}
 
 	return -ENOTTY;

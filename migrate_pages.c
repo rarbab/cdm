@@ -31,7 +31,7 @@ int nr_nodes;
 struct bitmask *old_nodes;
 struct bitmask *new_nodes;
 
-int cdm_migrate_pages(void *base, unsigned long size, int node)
+int cdm_migrate_pages(void *base, unsigned long size)
 {
 	struct cdm_migrate mig;
 	int fd, rc;
@@ -42,7 +42,6 @@ int cdm_migrate_pages(void *base, unsigned long size, int node)
 
 	mig.start = (__u64)base;
 	mig.end = (__u64)base + size;
-	mig.node = node;
 
 	rc = ioctl(fd, CDM_IOC_MIGRATE, &mig);
 	close(fd);
@@ -164,7 +163,7 @@ int main(int argc, char **argv)
 	if (nflag)
 		rc = numa_migrate_pages(0, old_nodes, new_nodes);
 	else
-		rc = cdm_migrate_pages(pages, pagesize * page_count, 1);
+		rc = cdm_migrate_pages(pages, pagesize * page_count);
 
 	if (rc < 0) {
 		perror("migrate failed");
