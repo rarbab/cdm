@@ -153,9 +153,7 @@ int main(int argc, char **argv)
 		}
 	}
 
-	/* Move to node zero */
-	numa_move_pages(0, page_count, addr, nodes, status, 0);
-
+	/* Perform migration */
 	printf("\nMigrating the current processes pages ...\n");
 	if (nflag)
 		rc = numa_migrate_pages(0, old_nodes, new_nodes);
