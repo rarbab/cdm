@@ -1,8 +1,6 @@
 #define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
 
 #include <linux/migrate.h>
-#include <linux/pagemap.h>
-#include <linux/slab.h>
 #include "cdm.h"
 #include "uapi.h"
 
