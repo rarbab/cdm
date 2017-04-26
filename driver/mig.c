@@ -71,8 +71,7 @@ static void finalize_and_map(struct vm_area_struct *vma,
 	}
 }
 
-const struct migrate_vma_ops ops =
-{
+static const struct migrate_vma_ops cdm_migrate_ops = {
 	.alloc_and_copy = alloc_and_copy,
 	.finalize_and_map = finalize_and_map
 };
@@ -91,7 +90,8 @@ int cdm_migrate(struct cdm_device *cdmdev, struct cdm_migrate *mig)
 		next = min_t(unsigned long, mig->end,
 			     addr + (64 << PAGE_SHIFT));
 
-		rc = migrate_vma(&ops, vma, addr, next, src, dst, cdmdev);
+		rc = migrate_vma(&cdm_migrate_ops, vma, addr, next, src, dst,
+				 cdmdev);
 		if (rc)
 			return rc;
 	}
