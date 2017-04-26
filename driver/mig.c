@@ -87,15 +87,13 @@ int cdm_migrate(struct cdm_device *cdmdev, struct cdm_migrate *mig)
 	vma = find_vma_intersection(current->mm, mig->start, mig->end);
 
 	for (addr = mig->start; addr < mig->end; addr = next) {
-		unsigned long mentries, src[64], dst[64];
+		unsigned long src[64], dst[64];
 		int rc;
 
 		next = min_t(unsigned long, mig->end,
 			     addr + (64 << PAGE_SHIFT));
-		mentries = (next - addr) >> PAGE_SHIFT;
 
-		rc = migrate_vma(&ops, vma, mentries, addr, next, src, dst,
-				 cdmdev);
+		rc = migrate_vma(&ops, vma, addr, next, src, dst, cdmdev);
 		if (rc)
 			return rc;
 	}
