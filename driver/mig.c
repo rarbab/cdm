@@ -8,7 +8,7 @@
 
 extern nodemask_t cdm_nmask;
 
-#ifdef CONFIG_HMM
+#ifdef MIGRATE_PFN_MIGRATE
 
 static struct page *alloc_page_cdm(struct cdm_device *cdmdev,
 				   struct page *old)
