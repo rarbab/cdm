@@ -126,7 +126,7 @@ static int cdm_device_probe(struct device_node *dn)
 	if (rc)
 		goto err;
 
-	dev = cdmdev->miscdev.this_device;
+	dev = cdmdev_dev(cdmdev);
 	set_dev_node(dev, nid);
 	dev->of_node = dn;
 
