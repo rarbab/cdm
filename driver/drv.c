@@ -55,11 +55,11 @@ static const struct file_operations cdm_device_fops = {
 	.unlocked_ioctl = cdm_fops_ioctl
 };
 
-static int cdm_miscdev_init(struct miscdevice *miscdev, int ncdm)
+static int cdm_miscdev_init(struct miscdevice *miscdev, int devno)
 {
 	int rc;
 
-	miscdev->name = kasprintf(GFP_KERNEL, "cdm%d", ncdm);
+	miscdev->name = kasprintf(GFP_KERNEL, "cdm%d", devno);
 	if (!miscdev->name)
 		return -ENOMEM;
 
@@ -122,7 +122,7 @@ static int cdm_device_probe(struct device_node *dn)
 		goto err;
 	}
 
-	rc = cdm_miscdev_init(&cdmdev->miscdev, ncdm);
+	rc = cdm_miscdev_init(&cdmdev->miscdev, nid);
 	if (rc)
 		goto err;
 
