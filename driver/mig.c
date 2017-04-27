@@ -106,4 +106,4 @@ int cdm_migrate(struct cdm_device *cdmdev, struct cdm_migrate *mig)
 	return -ENOSYS;
 }
 
-#endif /* CONFIG_HMM */
+#endif /* MIGRATE_PFN_MIGRATE */
