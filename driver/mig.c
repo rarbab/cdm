@@ -11,9 +11,9 @@ extern nodemask_t cdm_nmask;
 static struct page *alloc_page_cdm(struct cdm_device *cdmdev,
 				   struct page *old)
 {
+	nodemask_t nmask = NODE_MASK_NONE;
 	gfp_t gfp = GFP_HIGHUSER_MOVABLE;
 	struct zonelist *zl;
-	nodemask_t nmask;
 
 	if (cdmdev)
 		node_set(cdmdev_to_node(cdmdev), nmask);
