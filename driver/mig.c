@@ -22,24 +22,18 @@
 #include "cdm.h"
 #include "uapi.h"
 
-extern nodemask_t cdm_nmask;
-
 #ifdef MIGRATE_PFN_MIGRATE
 
 static struct page *alloc_page_cdm(struct cdm_device *cdmdev,
 				   struct page *old)
 {
-	nodemask_t nmask = NODE_MASK_NONE;
 	gfp_t gfp = GFP_HIGHUSER_MOVABLE;
-	struct zonelist *zl;
 
-	if (cdmdev)
-		node_set(cdmdev_to_node(cdmdev), nmask);
-	else
-		nodes_andnot(nmask, node_states[N_MEMORY], cdm_nmask);
+	if (!cdmdev)
+		return alloc_page(gfp);
 
-	zl = node_zonelist(page_to_nid(old), gfp);
-	return __alloc_pages_nodemask(gfp, 0, zl, &nmask);
+	gfp |= __GFP_THISNODE;
+	return alloc_pages_node(cdmdev_to_node(cdmdev), gfp, 0);
 }
 
 static void alloc_and_copy(struct vm_area_struct *vma,
