@@ -1,3 +1,21 @@
+/*
+ * Copyright (C) 2017 IBM Corporation
+ * Author: Reza Arbab <arbab@linux.vnet.ibm.com>
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>
+ */
+
 #define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
 
 #include <linux/fs.h>
@@ -179,4 +197,5 @@ static void __exit cdm_exit(void)
 module_init(cdm_init);
 module_exit(cdm_exit);
 
+/* As an exercise, do not use EXPORT_SYMBOL_GPL() symbols. */
 MODULE_LICENSE("non-GPL");
