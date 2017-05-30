@@ -99,7 +99,7 @@ int cdm_migrate(struct cdm_device *cdmdev, struct cdm_migrate *mig)
 	struct vm_area_struct *vma;
 	unsigned long addr, next;
 
-	down_write(&current->mm->mmap_sem);
+	down_read(&current->mm->mmap_sem);
 	vma = find_vma_intersection(current->mm, mig->start, mig->end);
 
 	for (addr = mig->start; addr < mig->end; addr = next) {
@@ -114,7 +114,7 @@ int cdm_migrate(struct cdm_device *cdmdev, struct cdm_migrate *mig)
 		if (rc)
 			return rc;
 	}
-	up_write(&current->mm->mmap_sem);
+	up_read(&current->mm->mmap_sem);
 
 	return 0;
 }
