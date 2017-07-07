@@ -111,8 +111,10 @@ int cdm_migrate(struct cdm_device *cdmdev, struct cdm_migrate *mig)
 
 		rc = migrate_vma(&cdm_migrate_ops, vma, addr, next, src, dst,
 				 cdmdev);
-		if (rc)
+		if (rc) {
+			up_read(&current->mm->mmap_sem);
 			return rc;
+		}
 	}
 	up_read(&current->mm->mmap_sem);
 
