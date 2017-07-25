@@ -31,15 +31,13 @@ static struct page *alloc_page_cdm(struct cdm_device *cdmdev,
 {
 	nodemask_t nmask = NODE_MASK_NONE;
 	gfp_t gfp = GFP_HIGHUSER_MOVABLE;
-	struct zonelist *zl;
 
 	if (cdmdev)
 		node_set(cdmdev_to_node(cdmdev), nmask);
 	else
 		nodes_andnot(nmask, node_states[N_MEMORY], cdm_nmask);
 
-	zl = node_zonelist(page_to_nid(old), gfp);
-	return __alloc_pages_nodemask(gfp, 0, zl, &nmask);
+	return __alloc_pages_nodemask(gfp, 0, cdmdev_to_node(cdmdev), &nmask);
 }
 
 static void alloc_and_copy(struct vm_area_struct *vma,
