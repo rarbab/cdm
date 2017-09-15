@@ -19,58 +19,41 @@
 #define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
 
 #include <linux/fs.h>
-#include <linux/uaccess.h>
 
 #define SYSFS_MEM(file) __stringify(/sys/devices/system/memory/file)
 
 static ssize_t write_buf(char *filename, char *buf)
 {
-	mm_segment_t old_fs;
 	struct file *filp;
 	loff_t pos = 0;
 	int ret;
 
-	old_fs = get_fs();
-	set_fs(KERNEL_DS);
-
 	filp = filp_open(filename, O_WRONLY, 0);
-	if (IS_ERR(filp)) {
-		ret = PTR_ERR(filp);
-		goto err;
-	}
+	if (IS_ERR(filp))
+		return PTR_ERR(filp);
 
-	ret = vfs_write(filp, buf, strlen(buf), &pos);
+	ret = kernel_write(filp, buf, strlen(buf), &pos);
+
 	filp_close(filp, NULL);
-err:
-	set_fs(old_fs);
-
 	return ret;
 }
 
 static ssize_t read_buf(char *filename, char *buf, ssize_t count)
 {
-	mm_segment_t old_fs;
 	struct file *filp;
 	loff_t pos = 0;
 
 	if (!count)
 		return 0;
 
-	old_fs = get_fs();
-	set_fs(KERNEL_DS);
-
 	filp = filp_open(filename, O_RDONLY, 0);
-	if (IS_ERR(filp)) {
-		count = PTR_ERR(filp);
-		goto err;
-	}
+	if (IS_ERR(filp))
+		return PTR_ERR(filp);
 
-	count = vfs_read(filp, buf, count - 1, &pos);
+	count = kernel_read(filp, buf, count - 1, &pos);
 	buf[count] = '\0';
-	filp_close(filp, NULL);
-err:
-	set_fs(old_fs);
 
+	filp_close(filp, NULL);
 	return count;
 }
 
