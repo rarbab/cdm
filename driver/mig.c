@@ -52,6 +52,9 @@ static void alloc_and_copy(struct vm_area_struct *vma,
 		if (!(src[i] & MIGRATE_PFN_MIGRATE))
 			continue;
 
+		if (!(src[i] >> MIGRATE_PFN_SHIFT))
+			continue;
+
 		spage = migrate_pfn_to_page(src[i]);
 		dpage = alloc_page_cdm(cdmdev, spage);
 
