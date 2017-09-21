@@ -97,25 +97,23 @@ int cdm_migrate(struct cdm_device *cdmdev, struct cdm_migrate *mig)
 {
 	struct vm_area_struct *vma;
 	unsigned long addr, next;
+	int rc = 0;
 
 	down_read(&current->mm->mmap_sem);
 	vma = find_vma_intersection(current->mm, mig->start, mig->end);
 
 	for (addr = mig->start; addr < mig->end; addr = next) {
 		unsigned long src[64], dst[64];
-		int rc;
 
 		next = min_t(unsigned long, mig->end,
 			     addr + (64 << PAGE_SHIFT));
 
 		rc = migrate_vma(&cdm_migrate_ops, vma, addr, next, src, dst,
 				 cdmdev);
-		if (rc) {
-			up_read(&current->mm->mmap_sem);
-			return rc;
-		}
+		if (rc)
+			break;
 	}
-	up_read(&current->mm->mmap_sem);
 
-	return 0;
+	up_read(&current->mm->mmap_sem);
+	return rc;
 }
