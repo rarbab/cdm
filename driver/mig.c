@@ -22,21 +22,7 @@
 #include "cdm.h"
 #include "uapi.h"
 
-extern nodemask_t cdm_nmask;
-
-static struct page *alloc_page_cdm(struct cdm_device *cdmdev,
-				   struct page *old)
-{
-	nodemask_t nmask = NODE_MASK_NONE;
-	gfp_t gfp = GFP_HIGHUSER_MOVABLE;
-
-	if (cdmdev)
-		node_set(cdmdev_to_node(cdmdev), nmask);
-	else
-		nodes_andnot(nmask, node_states[N_MEMORY], cdm_nmask);
-
-	return __alloc_pages_nodemask(gfp, 0, cdmdev_to_node(cdmdev), &nmask);
-}
+struct page *cdm_devmem_alloc(struct cdm_device *cdmdev);
 
 static void alloc_and_copy(struct vm_area_struct *vma,
 			   const unsigned long *src, unsigned long *dst,
@@ -56,7 +42,12 @@ static void alloc_and_copy(struct vm_area_struct *vma,
 			continue;
 
 		spage = migrate_pfn_to_page(src[i]);
-		dpage = alloc_page_cdm(cdmdev, spage);
+
+		/* Which direction are we migrating? */
+		if (cdmdev)
+			dpage = cdm_devmem_alloc(cdmdev);
+		else
+			dpage = alloc_page(GFP_HIGHUSER_MOVABLE);
 
 		if (!dpage) {
 			pr_err("%s: failed to alloc dst[%ld]\n", __func__, i);

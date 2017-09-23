@@ -21,9 +21,12 @@
 
 #include <linux/miscdevice.h>
 
+struct hmm_devmem;
+
 struct cdm_device {
 	struct miscdevice miscdev;
 	struct resource res;
+	struct hmm_devmem *devmem;
 };
 
 static inline struct device *cdmdev_dev(struct cdm_device *cdmdev)
