@@ -61,12 +61,29 @@ static const struct hmm_devmem_ops cdm_devmem_ops = {
 	.fault = cdm_devmem_fault
 };
 
+static void cdm_devmem_init_drvdata(struct hmm_devmem *devmem)
+{
+	unsigned long pfn;
+
+	for (pfn = devmem->pfn_first; pfn < devmem->pfn_last; pfn++) {
+		struct page *page = pfn_to_page(pfn);
+
+		hmm_devmem_page_set_drvdata(page, 0);
+	}
+}
+
 int cdm_devmem_add(struct cdm_device *cdmdev)
 {
-	cdmdev->devmem = hmm_devmem_add_resource(&cdm_devmem_ops,
-					 cdmdev_dev(cdmdev), &cdmdev->res);
+	struct hmm_devmem *devmem = hmm_devmem_add_resource(&cdm_devmem_ops,
+					cdmdev_dev(cdmdev), &cdmdev->res);
 
-	return PTR_ERR_OR_ZERO(cdmdev->devmem);
+	if (IS_ERR(devmem))
+		return PTR_ERR(devmem);
+
+	cdm_devmem_init_drvdata(devmem);
+	cdmdev->devmem = devmem;
+
+	return 0;
 }
 
 void cdm_devmem_remove(struct cdm_device *cdmdev)
