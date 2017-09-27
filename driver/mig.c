@@ -24,24 +24,19 @@
 
 struct page *cdm_devmem_alloc(struct cdm_device *cdmdev);
 
-static void alloc_and_copy(struct vm_area_struct *vma,
-			   const unsigned long *src, unsigned long *dst,
-			   unsigned long start, unsigned long end,
-			   void *private)
+static void alloc_and_copy(struct migrate_dma_ctx *ctx)
 {
-	struct cdm_device *cdmdev = (struct cdm_device *)private;
+	struct cdm_device *cdmdev = (struct cdm_device *)ctx->private;
 	unsigned long i;
 
-	for (i = 0; i < (end - start) >> PAGE_SHIFT; i++) {
+	for (i = 0; i < ctx->npages; i++) {
 		struct page *spage, *dpage;
 
-		if (!(src[i] & MIGRATE_PFN_MIGRATE))
+		if (!(ctx->src[i] & MIGRATE_PFN_MIGRATE) ||
+		    !(ctx->src[i] >> MIGRATE_PFN_SHIFT))
 			continue;
 
-		if (!(src[i] >> MIGRATE_PFN_SHIFT))
-			continue;
-
-		spage = migrate_pfn_to_page(src[i]);
+		spage = migrate_pfn_to_page(ctx->src[i]);
 
 		/* Which direction are we migrating? */
 		if (cdmdev)
@@ -51,7 +46,7 @@ static void alloc_and_copy(struct vm_area_struct *vma,
 
 		if (!dpage) {
 			pr_err("%s: failed to alloc dst[%ld]\n", __func__, i);
-			dst[i] = 0;
+			ctx->dst[i] = 0;
 			continue;
 		}
 
@@ -59,27 +54,24 @@ static void alloc_and_copy(struct vm_area_struct *vma,
 		copy_highpage(dpage, spage);
 
 		lock_page(dpage);
-		dst[i] = migrate_pfn(page_to_pfn(dpage)) | MIGRATE_PFN_LOCKED;
+		ctx->dst[i] = migrate_pfn(page_to_pfn(dpage));
+		ctx->dst[i] |= MIGRATE_PFN_LOCKED;
 	}
 }
 
-static void finalize_and_map(struct vm_area_struct *vma,
-			     const unsigned long *src,
-			     const unsigned long *dst,
-			     unsigned long start, unsigned long end,
-			     void *private)
+static void finalize_and_map(struct migrate_dma_ctx *ctx)
 {
 	unsigned long i;
 
-	for (i = 0; i < (end - start) >> PAGE_SHIFT; i++) {
-		if (src[i] & MIGRATE_PFN_MIGRATE)
+	for (i = 0; i < ctx->npages; i++) {
+		if (ctx->src[i] & MIGRATE_PFN_MIGRATE)
 			continue;
 
 		pr_err("%s: src[%ld] not migrated\n", __func__, i);
 	}
 }
 
-static const struct migrate_vma_ops cdm_migrate_ops = {
+static const struct migrate_dma_ops cdm_migrate_ops = {
 	.alloc_and_copy = alloc_and_copy,
 	.finalize_and_map = finalize_and_map
 };
@@ -95,12 +87,17 @@ int cdm_migrate(struct cdm_device *cdmdev, struct cdm_migrate *mig)
 
 	for (addr = mig->start; addr < mig->end; addr = next) {
 		unsigned long src[64], dst[64];
+		struct migrate_dma_ctx ctx = {
+			.ops = &cdm_migrate_ops,
+			.src = src,
+			.dst = dst,
+			.private = cdmdev
+		};
 
 		next = min_t(unsigned long, mig->end,
 			     addr + (64 << PAGE_SHIFT));
 
-		rc = migrate_vma(&cdm_migrate_ops, vma, addr, next, src, dst,
-				 cdmdev);
+		rc = migrate_vma(&ctx, vma, addr, next);
 		if (rc)
 			break;
 	}
