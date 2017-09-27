@@ -26,7 +26,7 @@
 #include "cdm.h"
 #include "uapi.h"
 
-int cdm_devmem_init(struct cdm_device *cdmdev);
+int cdm_devmem_add(struct cdm_device *cdmdev);
 void cdm_devmem_remove(struct cdm_device *cdmdev);
 int cdm_migrate(struct cdm_device *cdmdev, struct cdm_migrate *mig);
 
@@ -144,7 +144,7 @@ static int cdm_device_probe(struct device_node *dn)
 	set_dev_node(dev, nid);
 	dev->of_node = dn;
 
-	rc = cdm_devmem_init(cdmdev);
+	rc = cdm_devmem_add(cdmdev);
 	if (rc)
 		goto err;
 

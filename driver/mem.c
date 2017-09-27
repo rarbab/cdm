@@ -61,7 +61,7 @@ static const struct hmm_devmem_ops cdm_devmem_ops = {
 	.fault = cdm_devmem_fault
 };
 
-int cdm_devmem_init(struct cdm_device *cdmdev)
+int cdm_devmem_add(struct cdm_device *cdmdev)
 {
 	cdmdev->devmem = hmm_devmem_add_resource(&cdm_devmem_ops,
 					 cdmdev_dev(cdmdev), &cdmdev->res);
