@@ -150,6 +150,7 @@ static int cdm_device_probe(struct device_node *dn)
 
 	cdm_device[ncdm] = cdmdev;
 	node_set(nid, cdm_nmask);
+	INIT_LIST_HEAD(&cdmdev->page_list);
 	return 0;
 
 err:

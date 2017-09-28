@@ -27,6 +27,7 @@ struct cdm_device {
 	struct miscdevice miscdev;
 	struct resource res;
 	struct hmm_devmem *devmem;
+	struct list_head page_list;
 };
 
 static inline struct device *cdmdev_dev(struct cdm_device *cdmdev)

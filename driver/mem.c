@@ -20,6 +20,7 @@
 #include "cdm.h"
 
 struct cdm_drvdata {
+	struct list_head page_list;
 };
 
 static inline struct cdm_drvdata *get_drvdata(struct page *page)
@@ -48,6 +49,9 @@ struct page *cdm_devmem_alloc(struct cdm_device *cdmdev)
 		if (!drvdata)
 			break;
 
+		INIT_LIST_HEAD(&drvdata->page_list);
+		list_add_tail(&drvdata->page_list, &cdmdev->page_list);
+
 		set_drvdata(page, drvdata);
 		get_page(page);
 		return page;
@@ -59,6 +63,8 @@ struct page *cdm_devmem_alloc(struct cdm_device *cdmdev)
 static void cdm_devmem_free(struct hmm_devmem *devmem, struct page *page)
 {
 	struct cdm_drvdata *drvdata = get_drvdata(page);
+
+	list_del(&drvdata->page_list);
 
 	kfree(drvdata);
 	set_drvdata(page, NULL);
