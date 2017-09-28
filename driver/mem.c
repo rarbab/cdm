@@ -19,7 +19,18 @@
 #include <linux/hmm.h>
 #include "cdm.h"
 
-#define PAGE_USED 0xdeadbeef
+struct cdm_drvdata {
+};
+
+static inline struct cdm_drvdata *get_drvdata(struct page *page)
+{
+	return (struct cdm_drvdata *)hmm_devmem_page_get_drvdata(page);
+}
+
+static inline void set_drvdata(struct page *page, struct cdm_drvdata *drvdata)
+{
+	hmm_devmem_page_set_drvdata(page, (unsigned long)drvdata);
+}
 
 struct page *cdm_devmem_alloc(struct cdm_device *cdmdev)
 {
@@ -28,11 +39,16 @@ struct page *cdm_devmem_alloc(struct cdm_device *cdmdev)
 
 	for (pfn = devmem->pfn_first; pfn < devmem->pfn_last; pfn++) {
 		struct page *page = pfn_to_page(pfn);
+		struct cdm_drvdata *drvdata;
 
-		if (hmm_devmem_page_get_drvdata(page) == PAGE_USED)
+		if (get_drvdata(page))
 			continue;
 
-		hmm_devmem_page_set_drvdata(page, PAGE_USED);
+		drvdata = kmalloc(sizeof(*drvdata), GFP_KERNEL);
+		if (!drvdata)
+			break;
+
+		set_drvdata(page, drvdata);
 		get_page(page);
 		return page;
 	}
@@ -42,7 +58,10 @@ struct page *cdm_devmem_alloc(struct cdm_device *cdmdev)
 
 static void cdm_devmem_free(struct hmm_devmem *devmem, struct page *page)
 {
-	hmm_devmem_page_set_drvdata(page, 0);
+	struct cdm_drvdata *drvdata = get_drvdata(page);
+
+	kfree(drvdata);
+	set_drvdata(page, NULL);
 }
 
 static int cdm_devmem_fault(struct hmm_devmem *devmem,
@@ -68,7 +87,7 @@ static void cdm_devmem_init_drvdata(struct hmm_devmem *devmem)
 	for (pfn = devmem->pfn_first; pfn < devmem->pfn_last; pfn++) {
 		struct page *page = pfn_to_page(pfn);
 
-		hmm_devmem_page_set_drvdata(page, 0);
+		set_drvdata(page, NULL);
 	}
 }
 
