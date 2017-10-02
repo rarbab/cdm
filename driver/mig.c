@@ -71,7 +71,7 @@ static void finalize_and_map(struct migrate_dma_ctx *ctx)
 	}
 }
 
-static const struct migrate_dma_ops cdm_migrate_ops = {
+const struct migrate_dma_ops cdm_migrate_ops = {
 	.alloc_and_copy = alloc_and_copy,
 	.finalize_and_map = finalize_and_map
 };

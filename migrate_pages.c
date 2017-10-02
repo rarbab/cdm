@@ -177,6 +177,25 @@ int main(int argc, char **argv)
 		}
 	}
 
+	printf("\nWaiting 10 seconds for page eviction...\n");
+	sleep(10);
+
+	/* Get page state after eviction */
+	numa_move_pages(0, page_count, addr, NULL, status, 0);
+	for (i = 0; i < page_count; i++) {
+		printf("Page %d vaddr=%lx node=%d\n", i,
+			(unsigned long)(pages + i * pagesize), status[i]);
+		if (i != 2) {
+			if (pages[ i* pagesize ] != (char) i) {
+				printf("*** Page contents corrupted.\n");
+				errors++;
+			} else if (!numa_bitmask_isbitset(old_nodes, status[i])) {
+				printf("*** Page on the wrong node\n");
+				errors++;
+			}
+		}
+	}
+
 	if (!errors)
 		printf("Test successful.\n");
 	else

@@ -28,6 +28,7 @@ struct cdm_device {
 	struct resource res;
 	struct hmm_devmem *devmem;
 	struct list_head page_list;
+	struct delayed_work dwork;
 };
 
 static inline struct device *cdmdev_dev(struct cdm_device *cdmdev)
